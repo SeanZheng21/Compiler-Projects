@@ -1,0 +1,169 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta http-equiv="Content-Style-Type" content="text/css" />
+  <meta name="generator" content="pandoc" />
+  <title></title>
+  <style type="text/css">code{white-space: pre;}</style>
+  <style type="text/css">
+div.sourceCode { overflow-x: auto; }
+table.sourceCode, tr.sourceCode, td.lineNumbers, td.sourceCode {
+  margin: 0; padding: 0; vertical-align: baseline; border: none; }
+table.sourceCode { width: 100%; line-height: 100%; }
+td.lineNumbers { text-align: right; padding-right: 4px; padding-left: 4px; color: #aaaaaa; border-right: 1px solid #aaaaaa; }
+td.sourceCode { padding-left: 5px; }
+code > span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code > span.dt { color: #902000; } /* DataType */
+code > span.dv { color: #40a070; } /* DecVal */
+code > span.bn { color: #40a070; } /* BaseN */
+code > span.fl { color: #40a070; } /* Float */
+code > span.ch { color: #4070a0; } /* Char */
+code > span.st { color: #4070a0; } /* String */
+code > span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code > span.ot { color: #007020; } /* Other */
+code > span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code > span.fu { color: #06287e; } /* Function */
+code > span.er { color: #ff0000; font-weight: bold; } /* Error */
+code > span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+code > span.cn { color: #880000; } /* Constant */
+code > span.sc { color: #4070a0; } /* SpecialChar */
+code > span.vs { color: #4070a0; } /* VerbatimString */
+code > span.ss { color: #bb6688; } /* SpecialString */
+code > span.im { } /* Import */
+code > span.va { color: #19177c; } /* Variable */
+code > span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code > span.op { color: #666666; } /* Operator */
+code > span.bu { } /* BuiltIn */
+code > span.ex { } /* Extension */
+code > span.pp { color: #bc7a00; } /* Preprocessor */
+code > span.at { color: #7d9029; } /* Attribute */
+code > span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code > span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code > span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+  </style>
+</head>
+<body>
+<h1 id="interpréteur-prolog-analyse-lexicale">Interpréteur Prolog : Analyse Lexicale</h1>
+<h2 id="objectif">Objectif</h2>
+<p>Vous allez réaliser dans ce TP la partie scanner de notre interpréteur Prolog, qui nous servira lors de la phase d'analyse syntaxique. Le scanner de ce TP va être fait à la main, c'est-à-dire sans générateur d'analyseur lexical. Nous utiliserons ces générateurs lors des TP MiniJava.</p>
+<h2 id="grammaire-hors-contexte-de-notre-prolog">Grammaire hors-contexte de notre Prolog</h2>
+<p>La grammaire va être décrite dans le formalisme <a href="https://www.w3.org/TR/xquery/#EBNFNotation">EBNF</a> (différentes variantes de la notation EBNF existent) et <a href="https://en.wikipedia.org/wiki/Syntax_diagram">railroad diagrams</a> (cette notation est très intuitive) : <a href="http://moodle.insa-rennes.fr/pluginfile.php/44591/mod_resource/content/8/diagram.xhtml">grammaire de Prolog</a>. Essayer d'identifier les unités lexicales dans cette grammaire.</p>
+<p>Un exemple de programme que notre interpréteur sera capable d'exécuter est donné ci-dessous :</p>
+<div class="sourceCode"><pre class="sourceCode prolog"><code class="sourceCode prolog">append([]<span class="kw">,</span> <span class="dt">Ys</span><span class="kw">,</span> <span class="dt">Ys</span>)<span class="kw">.</span>
+append([<span class="dt">X</span><span class="fu">|</span><span class="dt">Xs</span>]<span class="kw">,</span> <span class="dt">Ys</span><span class="kw">,</span> [<span class="dt">X</span><span class="fu">|</span><span class="dt">Zs</span>]) <span class="kw">:-</span>
+    append(<span class="dt">Xs</span><span class="kw">,</span> <span class="dt">Ys</span><span class="kw">,</span> <span class="dt">Zs</span>)<span class="kw">.</span>
+
+flatten([]<span class="kw">,</span> [])<span class="kw">.</span>
+flatten([[]<span class="fu">|</span><span class="dt">Xs</span>]<span class="kw">,</span> <span class="dt">Res</span>) <span class="kw">:-</span>
+    flatten(<span class="dt">Xs</span><span class="kw">,</span> <span class="dt">Res</span>)<span class="kw">.</span>
+flatten([<span class="dt">X</span><span class="fu">|</span><span class="dt">Xs</span>]<span class="kw">,</span> [<span class="dt">X</span><span class="fu">|</span><span class="dt">Res</span>]) <span class="kw">:-</span>
+    <span class="kw">\=</span>(<span class="dt">X</span><span class="kw">,</span> [<span class="dt">_</span><span class="fu">|</span><span class="dt">_</span>])<span class="kw">,</span>
+    <span class="fu">\==</span>(<span class="dt">X</span><span class="kw">,</span> [])<span class="kw">,</span>
+    flatten(<span class="dt">Xs</span><span class="kw">,</span> <span class="dt">Res</span>)<span class="kw">.</span>
+flatten([<span class="dt">X</span><span class="fu">|</span><span class="dt">Xs</span>]<span class="kw">,</span> <span class="dt">Res</span>) <span class="kw">:-</span>
+    <span class="kw">=</span>(<span class="dt">X</span><span class="kw">,</span> [<span class="dt">_</span><span class="fu">|</span><span class="dt">_</span>])<span class="kw">,</span>
+    flatten(<span class="dt">X</span><span class="kw">,</span> <span class="dt">Res1</span>)<span class="kw">,</span>
+    flatten(<span class="dt">Xs</span><span class="kw">,</span> <span class="dt">Res2</span>)<span class="kw">,</span>
+    append(<span class="dt">Res1</span><span class="kw">,</span> <span class="dt">Res2</span><span class="kw">,</span> <span class="dt">Res</span>)<span class="kw">.</span>
+
+insert(<span class="dt">X</span><span class="kw">,</span> []<span class="kw">,</span> [<span class="dt">X</span>])<span class="kw">.</span>
+insert(<span class="dt">X</span><span class="kw">,</span> <span class="dt">Ys</span><span class="kw">,</span> [<span class="dt">X</span><span class="fu">|</span><span class="dt">Ys</span>]) <span class="kw">:-</span>
+    <span class="fu">\==</span>(<span class="dt">Ys</span><span class="kw">,</span> [])<span class="kw">.</span>
+insert(<span class="dt">X</span><span class="kw">,</span> [<span class="dt">Y</span><span class="fu">|</span><span class="dt">Ys</span>]<span class="kw">,</span> [<span class="dt">Y</span><span class="fu">|</span><span class="dt">Zs</span>]) <span class="kw">:-</span>
+    insert(<span class="dt">X</span><span class="kw">,</span> <span class="dt">Ys</span><span class="kw">,</span> <span class="dt">Zs</span>)<span class="kw">.</span>
+
+permutation([]<span class="kw">,</span> [])<span class="kw">.</span>
+permutation([<span class="dt">X</span><span class="fu">|</span><span class="dt">Xs</span>]<span class="kw">,</span> <span class="dt">Res</span>) <span class="kw">:-</span>
+    permutation(<span class="dt">Xs</span><span class="kw">,</span> <span class="dt">Res1</span>)<span class="kw">,</span>
+    insert(<span class="dt">X</span><span class="kw">,</span> <span class="dt">Res1</span><span class="kw">,</span> <span class="dt">Res</span>)<span class="kw">.</span>
+
+<span class="co">/*</span>
+<span class="co">   Magic square</span>
+
+<span class="co">   A1 A2 A3</span>
+<span class="co">   B1 B2 B3</span>
+<span class="co">   C1 C2 C3</span>
+<span class="co">*/</span>
+solve([<span class="dt">A1</span>, <span class="dt">A2</span>, <span class="dt">A3</span>, <span class="dt">B1</span>, <span class="dt">B2</span>, <span class="dt">B3</span>, <span class="dt">C1</span>, <span class="dt">C2</span>, <span class="dt">C3</span>]) <span class="kw">:-</span>
+    permutation([<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">3</span>,<span class="dv">4</span>,<span class="dv">5</span>,<span class="dv">6</span>,<span class="dv">7</span>,<span class="dv">8</span>,<span class="dv">9</span>]<span class="kw">,</span> [<span class="dt">A1</span>, <span class="dt">A2</span>, <span class="dt">A3</span>, <span class="dt">B1</span>, <span class="dt">B2</span>, <span class="dt">B3</span>, <span class="dt">C1</span>, <span class="dt">C2</span>, <span class="dt">C3</span>])<span class="kw">,</span>
+    <span class="dt">=:=</span>(<span class="dv">15</span><span class="er">,</span> <span class="dt">+</span>(<span class="dt">A1</span><span class="er">,</span> <span class="dt">+</span>(<span class="dt">A2</span><span class="er">,</span> <span class="dt">A3</span>)))<span class="kw">,</span>
+    <span class="dt">=:=</span>(<span class="dv">15</span><span class="er">,</span> <span class="dt">+</span>(<span class="dt">B1</span><span class="er">,</span> <span class="dt">+</span>(<span class="dt">B2</span><span class="er">,</span> <span class="dt">B3</span>)))<span class="kw">,</span>
+    <span class="dt">=:=</span>(<span class="dv">15</span><span class="er">,</span> <span class="dt">+</span>(<span class="dt">C1</span><span class="er">,</span> <span class="dt">+</span>(<span class="dt">C2</span><span class="er">,</span> <span class="dt">C3</span>)))<span class="kw">,</span>
+    <span class="dt">=:=</span>(<span class="dv">15</span><span class="er">,</span> <span class="dt">+</span>(<span class="dt">A1</span><span class="er">,</span> <span class="dt">+</span>(<span class="dt">B1</span><span class="er">,</span> <span class="dt">C1</span>)))<span class="kw">,</span>
+    <span class="dt">=:=</span>(<span class="dv">15</span><span class="er">,</span> <span class="dt">+</span>(<span class="dt">A2</span><span class="er">,</span> <span class="dt">+</span>(<span class="dt">B2</span><span class="er">,</span> <span class="dt">C2</span>)))<span class="kw">,</span>
+    <span class="dt">=:=</span>(<span class="dv">15</span><span class="er">,</span> <span class="dt">+</span>(<span class="dt">A3</span><span class="er">,</span> <span class="dt">+</span>(<span class="dt">B3</span><span class="er">,</span> <span class="dt">C3</span>)))<span class="kw">,</span>
+    <span class="dt">=:=</span>(<span class="dv">15</span><span class="er">,</span> <span class="dt">+</span>(<span class="dt">A1</span><span class="er">,</span> <span class="dt">+</span>(<span class="dt">B2</span><span class="er">,</span> <span class="dt">C3</span>)))<span class="kw">,</span>
+    <span class="dt">=:=</span>(<span class="dv">15</span><span class="er">,</span> <span class="dt">+</span>(<span class="dt">A3</span><span class="er">,</span> <span class="dt">+</span>(<span class="dt">B2</span><span class="er">,</span> <span class="dt">C1</span>)))<span class="kw">.</span></code></pre></div>
+<h2 id="code">Code</h2>
+<p>Le squelette du code est à télécharger <a href="http://moodle.insa-rennes.fr/mod/resource/view.php?id=18161">ici</a>. La documentation OCaml qui pourra vous être utile se trouve <a href="http://caml.inria.fr/pub/docs/manual-ocaml/">ici</a>.</p>
+<p>Les unités lexicales sont représentées par le type suivant :</p>
+<div class="sourceCode"><table class="sourceCode ocaml numberLines"><tr class="sourceCode"><td class="lineNumbers"><pre>1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+</pre></td><td class="sourceCode"><pre><code class="sourceCode ocaml"><span class="kw">type</span> token =
+| <span class="dt">INT</span> <span class="kw">of</span> <span class="dt">int</span>
+| <span class="dt">VARIABLE</span> <span class="kw">of</span> <span class="dt">string</span>
+| <span class="dt">NAME</span> <span class="kw">of</span> <span class="dt">string</span>
+| <span class="dt">LEFT_PAREN</span> | <span class="dt">RIGHT_PAREN</span>
+| <span class="dt">LEFT_BRACKET</span> | <span class="dt">RIGHT_BRACKET</span>
+| <span class="dt">PIPE</span> | <span class="dt">DOT</span> | <span class="dt">COMMA</span> | <span class="dt">COLON_HYPHEN</span>
+| <span class="dt">PLUS</span> | <span class="dt">MINUS</span> | <span class="dt">MULT</span> | <span class="dt">DIV</span>
+| <span class="dt">TERM_EQ</span> | <span class="dt">TERM_INEQ</span> | <span class="dt">IS</span> | <span class="dt">TERM_UNIFY</span> | <span class="dt">TERM_NOT_UNIFY</span>
+| <span class="dt">TERM_VAR</span> | <span class="dt">TERM_NOT_VAR</span> | <span class="dt">TERM_INTEGER</span> | <span class="dt">TERM_NOT_INTEGER</span>
+| <span class="dt">ARITH_EQ</span> | <span class="dt">ARITH_INEQ</span> | <span class="dt">ARITH_LESS</span> | <span class="dt">ARITH_GREATER</span> | <span class="dt">ARITH_GEQ</span> | <span class="dt">ARITH_LEQ</span>
+| <span class="dt">EOF</span></code></pre></td></tr></table></div>
+<p>Vous pouvez voir à la ligne 4 l'unité lexicale <code class="sourceCode ocaml"><span class="dt">NAME</span></code> représentant une variable en Prolog. Un attribut de type <code class="sourceCode ocaml"><span class="dt">string</span></code> est associé à cette unité lexicale afin de conserver le nom de la variable. Les autres éléments de ce type permettent de représenter toutes les autres unités lexicales (les terminaux de la grammaire).</p>
+<p>La fonction à compléter est la fonction <em>get_token</em> du fichier <em>lexer.ml</em> :</p>
+<div class="sourceCode"><table class="sourceCode ocaml numberLines"><tr class="sourceCode"><td class="lineNumbers"><pre>1
+2
+3
+4
+5
+6
+7
+</pre></td><td class="sourceCode"><pre><code class="sourceCode ocaml"><span class="kw">let</span> <span class="kw">rec</span> get_token stream =
+  <span class="kw">try</span>
+    <span class="kw">let</span> next () = Stream<span class="kw">.</span>next stream <span class="kw">in</span>
+    <span class="kw">let</span> peek () = Stream<span class="kw">.</span>peek stream <span class="kw">in</span>
+    <span class="kw">let</span> junk () = Stream<span class="kw">.</span>junk stream |&gt; ignore <span class="kw">in</span>
+    <span class="co">(* TO DO *)</span>
+  <span class="kw">with</span> Stream<span class="kw">.</span><span class="dt">Failure</span> -&gt; <span class="co">(* TO DO *)</span></code></pre></td></tr></table></div>
+<p>Cette fonction va analyser le flux de caractères (<em>stream</em> de type <a href="http://caml.inria.fr/pub/docs/manual-ocaml/libref/Stream.html"><em>Stream</em></a>) et renvoyer la prochaine unité lexicale. Trois fonctions permettant de manipuler le flux sont définies :</p>
+<ul>
+<li><p><em>next</em> retourne le premier caractère du flot et supprime ce caractère. Si le flot est vide, une exception de type <code class="sourceCode ocaml">Stream<span class="kw">.</span><span class="dt">Failure</span></code> est lancée.</p></li>
+<li><p><em>peek</em> retourne le premier caractère du flot sans le supprimer. L'élément renvoyé est <code class="sourceCode ocaml"><span class="dt">Some</span>(<span class="ch">&#39;a&#39;</span>)</code>, par exemple, si le flot n'est pas vide, et <code class="sourceCode ocaml"><span class="dt">None</span></code> sinon.</p></li>
+<li><p><em>junk</em> supprime le premier caractère du flot et renvoie une exception de type <code class="sourceCode ocaml">Stream<span class="kw">.</span><span class="dt">Failure</span></code> si le flot est vide.</p></li>
+</ul>
+<p><strong>N'oubliez pas d'utiliser le pattern matching !</strong></p>
+<p>La partie de code suivante, va permettre d'afficher des messages d'erreur en indiquant le bon numéro de ligne. la fonction <em>error</em> permet d'afficher vos messages d'erreur ainsi que le numéro de ligne correspondant. Il ne faudra pas oublier d'appeler au bon moment la fonction <em>newline</em> dans votre scanner.</p>
+<div class="sourceCode"><table class="sourceCode ocaml numberLines"><tr class="sourceCode"><td class="lineNumbers"><pre>1
+2
+3
+4
+</pre></td><td class="sourceCode"><pre><code class="sourceCode ocaml"><span class="kw">exception</span> <span class="dt">Lexical_error</span> <span class="kw">of</span> <span class="dt">string</span>
+<span class="kw">let</span> line_number = <span class="dt">ref</span> <span class="dv">0</span>
+<span class="kw">let</span> newline () = incr line_number
+<span class="kw">let</span> error msg = raise (<span class="dt">Lexical_error</span> (msg ^ <span class="st">&quot; at line &quot;</span> ^ string_of_int !line_number))</code></pre></td></tr></table></div>
+<h2 id="tests">Tests</h2>
+<p>Pour compiler et exécuter taper les commandes suivantes :</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">make</span>
+<span class="kw">./main.native</span> tests/list.pl</code></pre></div>
+<p>Je vous conseille de tester votre scanner de manière incrémentale. Vous pouvez, pour ce faire, ne reconnaître que certaines unités lexicales au début, puis en ajouter petit à petit.</p>
+<p>Le dossier tests contient les sorties désirées pour tous les fichiers Prolog contenus dans ce répertoire. Par exemple, le fichier <em>list.txt.token</em> contient la liste des unités lexicales du fichier <em>list.pl</em>. Pour comparer votre scanner avec le mien sur le fichier <em>list.pl</em> (par exemple), taper les commandes suivantes :</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">make</span>
+<span class="kw">./main.native</span> tests/list.pl <span class="kw">&gt;</span> res.txt
+<span class="kw">diff</span> -c res.txt tests/list.txt.token</code></pre></div>
+<p>La commande <em>diff</em> ne rendra rien si tout est bon, elle affichera les différences sinon. Tester aussi votre scanner sur des programmes contenant des erreurs.</p>
+</body>
+</html>

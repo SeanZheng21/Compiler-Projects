@@ -1,0 +1,137 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta http-equiv="Content-Style-Type" content="text/css" />
+  <meta name="generator" content="pandoc" />
+  <title></title>
+  <style type="text/css">code{white-space: pre;}</style>
+  <style type="text/css">
+div.sourceCode { overflow-x: auto; }
+table.sourceCode, tr.sourceCode, td.lineNumbers, td.sourceCode {
+  margin: 0; padding: 0; vertical-align: baseline; border: none; }
+table.sourceCode { width: 100%; line-height: 100%; }
+td.lineNumbers { text-align: right; padding-right: 4px; padding-left: 4px; color: #aaaaaa; border-right: 1px solid #aaaaaa; }
+td.sourceCode { padding-left: 5px; }
+code > span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code > span.dt { color: #902000; } /* DataType */
+code > span.dv { color: #40a070; } /* DecVal */
+code > span.bn { color: #40a070; } /* BaseN */
+code > span.fl { color: #40a070; } /* Float */
+code > span.ch { color: #4070a0; } /* Char */
+code > span.st { color: #4070a0; } /* String */
+code > span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code > span.ot { color: #007020; } /* Other */
+code > span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code > span.fu { color: #06287e; } /* Function */
+code > span.er { color: #ff0000; font-weight: bold; } /* Error */
+code > span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+code > span.cn { color: #880000; } /* Constant */
+code > span.sc { color: #4070a0; } /* SpecialChar */
+code > span.vs { color: #4070a0; } /* VerbatimString */
+code > span.ss { color: #bb6688; } /* SpecialString */
+code > span.im { } /* Import */
+code > span.va { color: #19177c; } /* Variable */
+code > span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code > span.op { color: #666666; } /* Operator */
+code > span.bu { } /* BuiltIn */
+code > span.ex { } /* Extension */
+code > span.pp { color: #bc7a00; } /* Preprocessor */
+code > span.at { color: #7d9029; } /* Attribute */
+code > span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code > span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code > span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+  </style>
+</head>
+<body>
+<h1 id="interpréteur-prolog-analyse-sémantique">Interpréteur Prolog : Analyse Sémantique</h1>
+<h2 id="objectifs">Objectifs</h2>
+<p>Dans ce TP, nous allons analyser l'arbre syntaxique abstrait afin de détecter les variables singletons, ce qui peut aider le programmeur à détecter des bugs.</p>
+<h2 id="variables-singletons">Variables Singletons</h2>
+<p>Nous allons chercher dans chaque clause les variables qui ne sont pas précédées d'un <code class="sourceCode ocaml"><span class="ch">&#39;_&#39;</span></code> et qui apparaissent une seule fois dans la clause. Ceci peut indiquer que le programmeur a mal orthographié une variable, car il faut se servir au moins deux fois d'une variable pour qu'elle soit utile dans le programme. Par exemple, dans le programme suivant :</p>
+<div class="sourceCode"><table class="sourceCode prolog numberLines"><tr class="sourceCode"><td class="lineNumbers"><pre>1
+2
+3
+</pre></td><td class="sourceCode"><pre><code class="sourceCode prolog">append([]<span class="kw">,</span> <span class="dt">Ys</span><span class="kw">,</span> <span class="dt">Y</span>)<span class="kw">.</span>
+append([<span class="dt">X</span><span class="fu">|</span><span class="dt">Xs</span>]<span class="kw">,</span> <span class="dt">Ys</span><span class="kw">,</span> [<span class="dt">X</span><span class="fu">|</span><span class="dt">Zs</span>]) <span class="kw">:-</span>
+    append(<span class="dt">Xs</span><span class="kw">,</span> <span class="dt">Yss</span><span class="kw">,</span> <span class="dt">Zs</span>)<span class="kw">.</span></code></pre></td></tr></table></div>
+<p>A la ligne 1, les variables <code class="sourceCode prolog"><span class="dt">Ys</span></code> et <code class="sourceCode prolog"><span class="dt">Y</span></code> sont des variables singletons. Le programmeur a oublié le <code class="sourceCode ocaml"><span class="ch">&#39;s&#39;</span></code> dans la deuxième variable.</p>
+<p>Dans la deuxième clause, aux lignes 2 et 3, <code class="sourceCode prolog"><span class="dt">Ys</span></code> et <code class="sourceCode prolog"><span class="dt">Yss</span></code> sont aussi des variables singletons.</p>
+<p>Notons que dans le programme suivant, il n'y a aucune variable singleton :</p>
+<div class="sourceCode"><pre class="sourceCode prolog"><code class="sourceCode prolog">no_singleton(<span class="dt">_X</span><span class="kw">,</span> <span class="dt">_</span><span class="kw">,</span> <span class="dv">1</span>)<span class="kw">.</span></code></pre></div>
+<h2 id="code">Code</h2>
+<p>Le squelette du code est à télécharger <a href="http://moodle.insa-rennes.fr/mod/resource/view.php?id=18304">ici</a>. La documentation OCaml se trouve <a href="http://caml.inria.fr/pub/docs/manual-ocaml/">ici</a>.</p>
+<p>Le fichier à compléter est <em>check_singleton_variable.ml</em>. Vous devez compléter la fonction suivante :</p>
+<div class="sourceCode"><table class="sourceCode ocaml numberLines"><tr class="sourceCode"><td class="lineNumbers"><pre>1
+</pre></td><td class="sourceCode"><pre><code class="sourceCode ocaml"><span class="kw">let</span> get_variables_from_predicate : predicate -&gt; (<span class="dt">string</span> * <span class="dt">int</span> * <span class="dt">int</span>) <span class="dt">list</span> = <span class="co">(* TO DO *)</span></code></pre></td></tr></table></div>
+<p>Cette fonction prend un élément de type <code class="sourceCode ocaml">predicate</code> en entrée et rend la liste des variables présentent dans celui-ci. Par exemple, avec le prédicat suivant :</p>
+<div class="sourceCode"><table class="sourceCode ocaml numberLines"><tr class="sourceCode"><td class="lineNumbers"><pre>1
+2
+3
+4
+5
+6
+</pre></td><td class="sourceCode"><pre><code class="sourceCode ocaml"><span class="dt">Predicate</span> (<span class="st">&quot;append&quot;</span>,
+           [<span class="dt">Cons</span> (<span class="dt">Variable</span> (<span class="st">&quot;X&quot;</span>, <span class="dv">1</span>, <span class="dv">2</span>),
+                  <span class="dt">Variable</span> (<span class="st">&quot;Xs&quot;</span>, <span class="dv">2</span>, <span class="dv">2</span>));
+            <span class="dt">Variable</span> (<span class="st">&quot;Ys&quot;</span>, <span class="dv">0</span>, <span class="dv">2</span>);
+            <span class="dt">Cons</span> (<span class="dt">Variable</span> (<span class="st">&quot;X&quot;</span>, <span class="dv">1</span>, <span class="dv">2</span>),
+                  <span class="dt">Variable</span> (<span class="st">&quot;Zs&quot;</span>, <span class="dv">3</span>, <span class="dv">2</span>))])</code></pre></td></tr></table></div>
+<p>On doit obtenir la liste suivante (l'ordre des éléments n'est pas important) :</p>
+<div class="sourceCode"><pre class="sourceCode ocaml"><code class="sourceCode ocaml">[(<span class="st">&quot;X&quot;</span>, <span class="dv">1</span>, <span class="dv">2</span>); (<span class="st">&quot;Xs&quot;</span>, <span class="dv">2</span>, <span class="dv">2</span>); (<span class="st">&quot;Ys&quot;</span>, <span class="dv">0</span>, <span class="dv">2</span>); (<span class="st">&quot;X&quot;</span>, <span class="dv">1</span>, <span class="dv">2</span>); (<span class="st">&quot;Zs&quot;</span>, <span class="dv">3</span>, <span class="dv">2</span>)]</code></pre></div>
+<p>La fonction <code class="sourceCode ocaml">check_clause</code> suivante (qui vous ai donnée) :</p>
+<div class="sourceCode"><table class="sourceCode ocaml numberLines"><tr class="sourceCode"><td class="lineNumbers"><pre>1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+</pre></td><td class="sourceCode"><pre><code class="sourceCode ocaml"><span class="kw">let</span> check_clause = <span class="kw">function</span>
+  | <span class="dt">Clause</span>(predicate, predicate_list) -&gt;
+    <span class="kw">let</span> variables =
+      predicate :: predicate_list
+      |&gt; List<span class="kw">.</span>map get_variables_from_predicate
+      |&gt; List<span class="kw">.</span>concat
+      |&gt; List<span class="kw">.</span>sort Pervasives<span class="kw">.</span>compare
+    <span class="kw">in</span>
+    <span class="kw">let</span> print_error (pos, x) =
+      Printf<span class="kw">.</span>printf <span class="st">&quot;singleton variable %s at line %d</span><span class="ch">\n</span><span class="st">&quot;</span> x pos
+    <span class="kw">in</span>
+    <span class="kw">let</span> <span class="kw">rec</span> singleton_variable prev = <span class="kw">function</span>
+      | [] -&gt; []
+      | (x, _, _) :: r <span class="kw">when</span> String<span class="kw">.</span>get x <span class="dv">0</span> = <span class="ch">&#39;_&#39;</span> -&gt; singleton_variable <span class="dt">None</span> r
+      | (x1, id1, pos1) :: (x2, id2, pos2) :: r <span class="kw">when</span> id1 = id2 -&gt; singleton_variable (<span class="dt">Some</span> id1) r
+      | (x, id, pos) :: r <span class="kw">when</span> prev = <span class="dt">Some</span> id -&gt; singleton_variable prev r
+      | (x, id, pos) :: r -&gt; (pos, x) :: singleton_variable (<span class="dt">Some</span> id) r
+    <span class="kw">in</span>
+    singleton_variable <span class="dt">None</span> variables
+    |&gt; List<span class="kw">.</span>sort Pervasives<span class="kw">.</span>compare
+    |&gt; List<span class="kw">.</span>iter print_error</code></pre></td></tr></table></div>
+<p>utilise votre fonction à la ligne 5 pour récupérer toutes les variables de la clause (dans le prédicat de tête et dans les prédicats du corps de la clause). Ensuite, à la ligne 7, elle trie la liste obtenue afin de pouvoir facilement repérer les variables apparaissant plus d'une fois. La fonction <code class="sourceCode ocaml">singleton_variable</code> à la ligne 12, va détecter les variables utilisées une seule fois et afficher un message d'erreur grâce à la fonction <code class="sourceCode ocaml">print_error</code> définie à partir de la ligne 9.</p>
+<h2 id="tests">Tests</h2>
+<p>Pour compiler et exécuter taper les commandes suivantes :</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">make</span>
+<span class="kw">./main.native</span> tests/list.pl</code></pre></div>
+<p>Le dossier tests contient les sorties désirées pour tous les fichiers Prolog contenus dans ce répertoire. Par exemple, le fichier <em>list.txt.singleton</em> contient les messages d'erreurs pour le fichier <em>list.pl</em>. Pour comparer votre programme avec le mien sur le fichier <em>list.pl</em> (par exemple), taper les commandes suivantes :</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">make</span>
+<span class="kw">./main.native</span> tests/list.pl <span class="kw">&gt;</span> res.txt
+<span class="kw">diff</span> -c res.txt tests/list.txt.singleton</code></pre></div>
+<p>La commande <em>diff</em> ne rendra rien si tout est bon, elle affichera les différences sinon. Tester aussi votre parser sur des programmes contenant des erreurs.</p>
+</body>
+</html>

@@ -1,0 +1,258 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta http-equiv="Content-Style-Type" content="text/css" />
+  <meta name="generator" content="pandoc" />
+  <title></title>
+  <style type="text/css">code{white-space: pre;}</style>
+  <style type="text/css">
+div.sourceCode { overflow-x: auto; }
+table.sourceCode, tr.sourceCode, td.lineNumbers, td.sourceCode {
+  margin: 0; padding: 0; vertical-align: baseline; border: none; }
+table.sourceCode { width: 100%; line-height: 100%; }
+td.lineNumbers { text-align: right; padding-right: 4px; padding-left: 4px; color: #aaaaaa; border-right: 1px solid #aaaaaa; }
+td.sourceCode { padding-left: 5px; }
+code > span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code > span.dt { color: #902000; } /* DataType */
+code > span.dv { color: #40a070; } /* DecVal */
+code > span.bn { color: #40a070; } /* BaseN */
+code > span.fl { color: #40a070; } /* Float */
+code > span.ch { color: #4070a0; } /* Char */
+code > span.st { color: #4070a0; } /* String */
+code > span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code > span.ot { color: #007020; } /* Other */
+code > span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code > span.fu { color: #06287e; } /* Function */
+code > span.er { color: #ff0000; font-weight: bold; } /* Error */
+code > span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+code > span.cn { color: #880000; } /* Constant */
+code > span.sc { color: #4070a0; } /* SpecialChar */
+code > span.vs { color: #4070a0; } /* VerbatimString */
+code > span.ss { color: #bb6688; } /* SpecialString */
+code > span.im { } /* Import */
+code > span.va { color: #19177c; } /* Variable */
+code > span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code > span.op { color: #666666; } /* Operator */
+code > span.bu { } /* BuiltIn */
+code > span.ex { } /* Extension */
+code > span.pp { color: #bc7a00; } /* Preprocessor */
+code > span.at { color: #7d9029; } /* Attribute */
+code > span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code > span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code > span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+  </style>
+</head>
+<body>
+<h1 id="interpréteur-prolog-analyse-syntaxique-ll1">Interpréteur Prolog : Analyse syntaxique LL(1)</h1>
+<h2 id="objectifs">Objectifs</h2>
+<p>Dans ce TP, nous allons analyser le flot d'unités lexicales retourné par le scanner afin de construire l'arbre syntaxique abstrait de notre Prolog. Nous allons pour ce faire, coder à la main un analyseur syntaxique descendant LL(1).</p>
+<h2 id="calcul-des-premiers-et-suivants">Calcul des premiers et suivants</h2>
+<p>Vérifier que la <a href="http://moodle.insa-rennes.fr/pluginfile.php/44591/mod_resource/content/8/diagram.xhtml">grammaire de notre Prolog</a> ne contient pas de récursivité à gauche et ne nécessite pas de factorisation. Calculer ensuite les premiers et les suivants pour tous les non-terminaux. Vérifier que la grammaire possède la propriété LL(1).</p>
+<h2 id="code">Code</h2>
+<p>Le squelette du code est à télécharger <a href="http://moodle.insa-rennes.fr/mod/resource/view.php?id=18234">ici</a>. La documentation OCaml se trouve <a href="http://caml.inria.fr/pub/docs/manual-ocaml/">ici</a>.</p>
+<p>Vous allez reconnaitre la structure du langage et en même temps construire l'arbre syntaxique abstrait représentant le programme ou la requête analysé. Les types suivants représentent l'arbre syntaxique abstrait :</p>
+<div class="sourceCode"><table class="sourceCode ocaml numberLines"><tr class="sourceCode"><td class="lineNumbers"><pre>1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+</pre></td><td class="sourceCode"><pre><code class="sourceCode ocaml"><span class="kw">type</span> builtin_functor =
+| <span class="dt">Plus</span>
+| <span class="dt">Minus</span>
+| <span class="dt">Mult</span>
+| <span class="dt">Div</span>
+
+<span class="kw">type</span> line_number = <span class="dt">int</span>
+
+<span class="kw">type</span> term =
+| <span class="dt">Functor</span> <span class="kw">of</span> <span class="dt">string</span> * term <span class="dt">list</span>
+| <span class="dt">BuiltinFunctor</span> <span class="kw">of</span> builtin_functor * term * term
+| <span class="dt">Integer</span> <span class="kw">of</span> <span class="dt">int</span>
+| <span class="dt">Variable</span> <span class="kw">of</span> <span class="dt">string</span> * <span class="dt">int</span> * line_number
+| <span class="dt">EmptyList</span>
+| <span class="dt">Cons</span> <span class="kw">of</span> term * term
+
+<span class="kw">type</span> builtin_predicate =
+| <span class="dt">Is</span> <span class="kw">of</span> term * term
+| <span class="dt">ArithmeticEquality</span> <span class="kw">of</span> term * term
+| <span class="dt">ArithmeticInequality</span> <span class="kw">of</span> term * term
+| <span class="dt">ArithmeticLess</span> <span class="kw">of</span> term * term
+| <span class="dt">ArithmeticGreater</span> <span class="kw">of</span> term * term
+| <span class="dt">ArithmeticLeq</span> <span class="kw">of</span> term * term
+| <span class="dt">ArithmeticGeq</span> <span class="kw">of</span> term * term
+| <span class="dt">TermEquality</span> <span class="kw">of</span> term * term
+| <span class="dt">TermInequality</span> <span class="kw">of</span> term * term
+| <span class="dt">TermUnify</span> <span class="kw">of</span> term * term
+| <span class="dt">TermNotUnify</span> <span class="kw">of</span> term * term
+| <span class="dt">TermVar</span> <span class="kw">of</span> term
+| <span class="dt">TermNotVar</span> <span class="kw">of</span> term
+| <span class="dt">TermInteger</span> <span class="kw">of</span> term
+| <span class="dt">TermNotInteger</span> <span class="kw">of</span> term
+
+<span class="kw">type</span> predicate =
+| <span class="dt">Predicate</span> <span class="kw">of</span> <span class="dt">string</span> * term <span class="dt">list</span>
+| <span class="dt">BuiltinPredicate</span> <span class="kw">of</span> builtin_predicate
+
+<span class="kw">type</span> clause = <span class="dt">Clause</span> <span class="kw">of</span> predicate * predicate <span class="dt">list</span>
+
+<span class="kw">type</span> program = clause <span class="dt">list</span>
+
+<span class="kw">type</span> query = predicate <span class="dt">list</span></code></pre></td></tr></table></div>
+<p>Par exemple, le programme suivant :</p>
+<div class="sourceCode"><table class="sourceCode prolog numberLines"><tr class="sourceCode"><td class="lineNumbers"><pre>1
+2
+3
+</pre></td><td class="sourceCode"><pre><code class="sourceCode prolog">append([]<span class="kw">,</span> <span class="dt">Ys</span><span class="kw">,</span> <span class="dt">Ys</span>)<span class="kw">.</span>
+append([<span class="dt">X</span><span class="fu">|</span><span class="dt">Xs</span>]<span class="kw">,</span> <span class="dt">Ys</span><span class="kw">,</span> [<span class="dt">X</span><span class="fu">|</span><span class="dt">Zs</span>]) <span class="kw">:-</span>
+    append(<span class="dt">Xs</span><span class="kw">,</span> <span class="dt">Ys</span><span class="kw">,</span> <span class="dt">Zs</span>)<span class="kw">.</span></code></pre></td></tr></table></div>
+<p>est représenté par l'arbre syntaxique abstrait suivant :</p>
+<div class="sourceCode"><table class="sourceCode ocaml numberLines"><tr class="sourceCode"><td class="lineNumbers"><pre>1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+</pre></td><td class="sourceCode"><pre><code class="sourceCode ocaml"><span class="kw">val</span> rules : clause <span class="dt">list</span> =
+  [<span class="dt">Clause</span>
+    (<span class="dt">Predicate</span> (<span class="st">&quot;append&quot;</span>,
+      [<span class="dt">EmptyList</span>; <span class="dt">Variable</span> (<span class="st">&quot;Ys&quot;</span>, <span class="dv">0</span>, <span class="dv">1</span>);
+       <span class="dt">Variable</span> (<span class="st">&quot;Ys&quot;</span>, <span class="dv">0</span>, <span class="dv">1</span>)]),
+    []);
+   <span class="dt">Clause</span>
+    (<span class="dt">Predicate</span> (<span class="st">&quot;append&quot;</span>,
+      [<span class="dt">Cons</span> (<span class="dt">Variable</span> (<span class="st">&quot;X&quot;</span>, <span class="dv">1</span>, <span class="dv">2</span>),
+        <span class="dt">Variable</span> (<span class="st">&quot;Xs&quot;</span>, <span class="dv">2</span>, <span class="dv">2</span>));
+       <span class="dt">Variable</span> (<span class="st">&quot;Ys&quot;</span>, <span class="dv">0</span>, <span class="dv">2</span>);
+       <span class="dt">Cons</span> (<span class="dt">Variable</span> (<span class="st">&quot;X&quot;</span>, <span class="dv">1</span>, <span class="dv">2</span>),
+        <span class="dt">Variable</span> (<span class="st">&quot;Zs&quot;</span>, <span class="dv">3</span>, <span class="dv">2</span>))]),
+    [<span class="dt">Predicate</span> (<span class="st">&quot;append&quot;</span>,
+      [<span class="dt">Variable</span> (<span class="st">&quot;Xs&quot;</span>, <span class="dv">2</span>, <span class="dv">3</span>);
+       <span class="dt">Variable</span> (<span class="st">&quot;Ys&quot;</span>, <span class="dv">0</span>, <span class="dv">3</span>);
+       <span class="dt">Variable</span> (<span class="st">&quot;Zs&quot;</span>, <span class="dv">3</span>, <span class="dv">3</span>)])])]</code></pre></td></tr></table></div>
+<p>Les variables possèdent 3 champs :</p>
+<ol style="list-style-type: decimal">
+<li>Le nom de la variable.</li>
+<li>Un numéro associé au nom de la variable qui permettra d'être plus efficace lors de l'évaluation de l'arbre abstrait. En effet, manipuler des chaînes de caractères est moins efficace que manipuler des entiers. Dans une clause donnée, le même numéro est associé à toutes les occurences d'une même variable.</li>
+<li>Le numéro de ligne de cette variable dans le fichier source. Cette information nous sera utile pour afficher correctement des messages, lorsque nous détecterons les variables de type singleton lors de l'analyse sémantique.</li>
+</ol>
+<p>Lorsque vous reconnaîtrez l'unité lexicale <code class="sourceCode ocaml"><span class="dt">VARIABLE</span> name</code> dans votre analyseur syntaxique, vous devrez faire :</p>
+<div class="sourceCode"><table class="sourceCode ocaml numberLines"><tr class="sourceCode"><td class="lineNumbers"><pre>1
+2
+3
+</pre></td><td class="sourceCode"><pre><code class="sourceCode ocaml">  <span class="kw">match</span> next () <span class="kw">with</span>
+  | <span class="dt">VARIABLE</span> name -&gt; <span class="dt">Variable</span>(name, get_var_counter name, !line_number)
+  | ...</code></pre></td></tr></table></div>
+<p>Vous devez compléter le fichier <em>parser.ml</em>. Je vous ai donné le code ci-dessous qui représente le début de l'analyseur.</p>
+<div class="sourceCode"><table class="sourceCode ocaml numberLines"><tr class="sourceCode"><td class="lineNumbers"><pre>1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+</pre></td><td class="sourceCode"><pre><code class="sourceCode ocaml"><span class="kw">let</span> <span class="kw">rec</span> program get_token = clause_list (init_tokens get_token)
+
+<span class="kw">and</span> query get_token = predicate_list (init_tokens get_token)
+
+<span class="kw">and</span> clause_list ((next, peek, junk) <span class="kw">as</span> tokens) =
+  <span class="kw">let</span> c = clause tokens <span class="kw">in</span>
+  <span class="kw">if</span> peek () = <span class="dt">EOF</span> <span class="kw">then</span> [c]
+  <span class="kw">else</span> c :: clause_list tokens
+
+<span class="kw">and</span> clause ((next, peek, junk) <span class="kw">as</span> tokens) =
+  <span class="kw">let</span> p = predicate tokens <span class="kw">in</span>
+  <span class="kw">match</span> p <span class="kw">with</span>
+  | <span class="dt">BuiltinPredicate</span> _ -&gt; error <span class="st">&quot;no builtin predicate in head of clause&quot;</span>
+  | _ -&gt; ();
+  <span class="kw">let</span> l =
+    <span class="kw">match</span> next () <span class="kw">with</span>
+    | <span class="dt">DOT</span> -&gt; []
+    | <span class="dt">COLON_HYPHEN</span> -&gt; predicate_list tokens
+    | _ -&gt; error <span class="st">&quot;head of clause is followed by &#39;.&#39; or &#39;:-&#39;&quot;</span>
+  <span class="kw">in</span>
+  <span class="dt">Clause</span>(p, l)
+
+<span class="kw">and</span> predicate ((next, peek, junk) <span class="kw">as</span> tokens) = failwith <span class="st">&quot;TO DO&quot;</span>
+
+<span class="kw">and</span> predicate_list ((next, peek, junk) <span class="kw">as</span> tokens) = failwith <span class="st">&quot;TO DO&quot;</span></code></pre></td></tr></table></div>
+<p>Vous pouvez voir que les unités lexicales, que nous avons reconnues lors du dernier TP, apparaissent dans l'analyseur syntaxique (lignes 7, 17 et 18). A la ligne 21, je retourne l'arbre syntaxique abstrait représentant une clause.</p>
+<h2 id="tests">Tests</h2>
+<p>Pour compiler et exécuter taper les commandes suivantes :</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">make</span>
+<span class="kw">./main.native</span> tests/list.pl</code></pre></div>
+<p>Je vous conseille de tester votre parser de manière incrémentale. Vous pouvez, pour ce faire, ne reconnaître que certains termes et aucun prédicats prédéfinis au début, puis d'ajouter d'autres constructions petit à petit.</p>
+<p>Le dossier tests contient les sorties désirées pour tous les fichiers Prolog contenus dans ce répertoire. Par exemple, le fichier <em>list.txt.ast</em> contient la représentation textuelle de l'arbre syntaxique abstrait. Pour comparer votre parser avec le mien sur le fichier <em>list.pl</em> (par exemple), taper les commandes suivantes :</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">make</span>
+<span class="kw">./main.native</span> tests/list.pl <span class="kw">&gt;</span> res.txt
+<span class="kw">diff</span> -c res.txt tests/list.txt.ast</code></pre></div>
+<p>La commande <em>diff</em> ne rendra rien si tout est bon, elle affichera les différences sinon. Tester aussi votre parser sur des programmes contenant des erreurs.</p>
+</body>
+</html>

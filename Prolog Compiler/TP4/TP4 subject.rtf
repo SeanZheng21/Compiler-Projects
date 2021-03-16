@@ -1,0 +1,336 @@
+{\rtf1\ansi\ansicpg1252\cocoartf2511
+\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\froman\fcharset0 Times-Bold;\f1\froman\fcharset0 Times-Roman;\f2\froman\fcharset0 Times-Italic;
+\f3\fmodern\fcharset0 Courier-Bold;\f4\fmodern\fcharset0 Courier;\f5\fmodern\fcharset0 Courier-Oblique;
+}
+{\colortbl;\red255\green255\blue255;\red0\green0\blue0;\red0\green0\blue233;\red13\green95\blue24;
+\red50\green91\blue142;\red53\green145\blue93;\red124\green19\blue2;\red154\green154\blue154;\red79\green143\blue160;
+}
+{\*\expandedcolortbl;;\cssrgb\c0\c0\c0;\cssrgb\c0\c0\c93333;\cssrgb\c0\c43922\c12549;
+\cssrgb\c25098\c43922\c62745;\cssrgb\c25098\c62745\c43922;\cssrgb\c56471\c12549\c0;\cssrgb\c66667\c66667\c66667;\cssrgb\c37647\c62745\c69020;
+}
+{\*\listtable{\list\listtemplateid1\listhybrid{\listlevel\levelnfc0\levelnfcn0\leveljc0\leveljcn0\levelfollow0\levelstartat1\levelspace360\levelindent0{\*\levelmarker \{decimal\}}{\leveltext\leveltemplateid1\'01\'00;}{\levelnumbers\'01;}\fi-360\li720\lin720 }{\listname ;}\listid1}
+{\list\listtemplateid2\listhybrid{\listlevel\levelnfc0\levelnfcn0\leveljc0\leveljcn0\levelfollow0\levelstartat1\levelspace360\levelindent0{\*\levelmarker \{decimal\}}{\leveltext\leveltemplateid101\'01\'00;}{\levelnumbers\'01;}\fi-360\li720\lin720 }{\listname ;}\listid2}}
+{\*\listoverridetable{\listoverride\listid1\listoverridecount0\ls1}{\listoverride\listid2\listoverridecount0\ls2}}
+\margl1440\margr1440\vieww26560\viewh15640\viewkind0
+\deftab720
+\pard\pardeftab720\partightenfactor0
+
+\f0\b\fs64 \cf0 \expnd0\expndtw0\kerning0
+Interpr\'e9teur Prolog : \'e9valuation de l'arbre syntaxique abstrait\
+\pard\pardeftab720\partightenfactor0
+
+\fs48 \cf0 Objectifs\
+\pard\pardeftab720\partightenfactor0
+
+\f1\b0\fs32 \cf0 Dans ce dernier TP, nous allons analyser l'arbre syntaxique abstrait afin d'ex\'e9cuter le programme Prolog.\
+\pard\pardeftab720\partightenfactor0
+
+\f0\b\fs48 \cf0 Substitutions dans les termes\
+\pard\pardeftab720\partightenfactor0
+
+\fs37\fsmilli18720 \cf0 Travail demand\'e9\
+\pard\pardeftab720\partightenfactor0
+
+\f1\b0\fs32 \cf0 Le code \'e0 r\'e9cup\'e9rer pour cette partie se trouve {\field{\*\fldinst{HYPERLINK "http://moodle.insa-rennes.fr/mod/resource/view.php?id=18507"}}{\fldrslt \cf3 \ul \ulc3 ici}}.\
+Vous devez compl\'e9ter le fichier 
+\f2\i substitution.ml
+\f1\i0 .\
+La substitution va permettre de remplacer des variables par des termes. Cela nous sera utile pour :\
+\pard\tx220\tx720\pardeftab720\li720\fi-720\partightenfactor0
+\ls1\ilvl0\cf0 \kerning1\expnd0\expndtw0 {\listtext	1	}\expnd0\expndtw0\kerning0
+Renommer les variables dans une clause, afin d'obtenir de variables fra\'eeches \'e0 chaque utilisation de celle-ci.\
+\ls1\ilvl0\kerning1\expnd0\expndtw0 {\listtext	2	}\expnd0\expndtw0\kerning0
+Substituer des termes \'e0 des variables lors de l'unification.\
+\pard\pardeftab720\partightenfactor0
+\cf0 La fonction \'e0 compl\'e9ter est la fonction 
+\f3\b\fs26 \cf4 let
+\f4\b0 \cf0  
+\f3\b \cf4 rec
+\f4\b0 \cf0  substitution_in_term env term
+\f1\fs32 . Le param\'e8tre 
+\f4\fs26 env
+\f1\fs32  repr\'e9sente un environnement qui fait correspondre des entiers \'e0 des termes. L'entier correspond au deuxi\'e8me argument d'une variable. Par exemple, dans 
+\f4\fs26 Variable(\cf5 "X"\cf0 , \cf6 1\cf0 , \cf6 42\cf0 )
+\f1\fs32 , l'entier 
+\f4\fs26 \cf6 1
+\f1\fs32 \cf0  identifie cette variable. Pour trouver le terme associ\'e9 \'e0 l'entier 
+\f4\fs26 id
+\f1\fs32  identifiant la variable, il faut utiliser\
+\pard\pardeftab720\partightenfactor0
+
+\f4\fs26 \cf0 Env.find env id\
+\pard\pardeftab720\partightenfactor0
+
+\f1\fs32 \cf0 Si 
+\f4\fs26 id
+\f1\fs32  ne se trouve pas dans l'environnement, l'exception 
+\f4\fs26 \cf7 Not_found
+\f1\fs32 \cf0  est lev\'e9e.\
+Notez que dans l'environnement de substitution, on peut avoir : 
+\f4\fs26 \{ X --> f(1, Y), Y --> 0 \}
+\f1\fs32 . Cela veut dire, que pour obtenir une substitution compl\'e8te, il faudra ne pas oublier de faire quelque chose.\
+\pard\pardeftab720\partightenfactor0
+
+\f0\b\fs37\fsmilli18720 \cf0 Example\
+\pard\pardeftab720\partightenfactor0
+
+\f1\b0\fs32 \cf0 Soit le terme\
+\pard\pardeftab720\partightenfactor0
+
+\f3\b\fs26 \cf4 let
+\f4\b0 \cf0  term = Functor(\cf5 "tree"\cf0 , [Int \cf6 43\cf0 ;\
+                            Functor(\cf5 "tree"\cf0 , [Int \cf6 2\cf0 ; Functor(\cf5 "empty"\cf0 , []); Functor(\cf5 "empty"\cf0 , [])]);\
+                            Variable(\cf5 "X"\cf0 , \cf6 1\cf0 , \cf6 42\cf0 )])\
+\pard\pardeftab720\partightenfactor0
+
+\f1\fs32 \cf0 alors, si 
+\f4\fs26 env
+\f1\fs32  contient la liaison 
+\f4\fs26 \cf6 1\cf0  --> Functor(\cf5 "empty"\cf0 , [])
+\f1\fs32 , 
+\f4\fs26 substitution_in_term env term
+\f1\fs32  donnera\
+\pard\pardeftab720\partightenfactor0
+
+\f4\fs26 \cf0 Functor(\cf5 "tree"\cf0 , [Int \cf6 43\cf0 ;\
+                 Functor(\cf5 "tree"\cf0 , [Int \cf6 2\cf0 ; Functor(\cf5 "empty"\cf0 , []); Functor(\cf5 "empty"\cf0 , [])]);\
+                 Functor(\cf5 "empty"\cf0 , [])])\
+\pard\pardeftab720\partightenfactor0
+
+\f0\b\fs37\fsmilli18720 \cf0 Tests\
+\pard\pardeftab720\partightenfactor0
+
+\f1\b0\fs32 \cf0 Pour compiler : 
+\f2\i make
+\f1\i0 .\
+Pour tester, il suffit de lancer un des programmes, et si tout est correct, l'interpr\'e9teur ex\'e9cutera vos requ\'eates correctement. Par exemple, vous pouvez ex\'e9cuter :\
+\pard\pardeftab720\partightenfactor0
+
+\f4\fs26 \cf0 ./main.native tests/einstein.pl\
+\pard\pardeftab720\partightenfactor0
+
+\f1\fs32 \cf0 puis dans l'interpr\'e9teur Prolog, vous pouvez taper\
+\pard\pardeftab720\partightenfactor0
+
+\f3\b\fs26 \cf4 :-
+\f4\b0 \cf0  solution(\cf7 S\cf0 )
+\f3\b \cf4 .
+\f4\b0 \cf0 \
+\pard\pardeftab720\partightenfactor0
+
+\f1\fs32 \cf0 vous devriez voir appara\'eetre la solution du puzzle.\
+\pard\pardeftab720\partightenfactor0
+
+\f0\b\fs48 \cf0 Unification\
+\pard\pardeftab720\partightenfactor0
+
+\fs37\fsmilli18720 \cf0 Travail demand\'e9\
+\pard\pardeftab720\partightenfactor0
+
+\f1\b0\fs32 \cf0 Le code \'e0 r\'e9cup\'e9rer pour cette partie se trouve {\field{\*\fldinst{HYPERLINK "http://moodle.insa-rennes.fr/mod/resource/view.php?id=18506"}}{\fldrslt \cf3 \ul \ulc3 ici}}.\
+Vous devez compl\'e9ter le fichier 
+\f2\i unification.ml
+\f1\i0 .\
+L'unification va permettre de trouver l'unificateur le plus g\'e9n\'e9ral permettant de rendre identique deux termes 
+\f4\fs26 t1
+\f1\fs32  et 
+\f4\fs26 t2
+\f1\fs32 . C'est le m\'e9canisme de base de Prolog.\
+La fonction \'e0 compl\'e9ter est la fonction 
+\f3\b\fs26 \cf4 let
+\f4\b0 \cf0  
+\f3\b \cf4 rec
+\f4\b0 \cf0  unify_terms env t1 t2
+\f1\fs32 . Le param\'e8tre 
+\f4\fs26 env
+\f1\fs32  repr\'e9sente un environnement qui fait correspondre des entiers \'e0 des termes. Le but est de compl\'e9ter l'environnement, pour qu'il puisse unifier les deux termes 
+\f4\fs26 t1
+\f1\fs32  et 
+\f4\fs26 t2
+\f1\fs32 . Pour ajouter une liaison \'e0 l'environnement, en supposant que 
+\f4\fs26 id
+\f1\fs32  est l'entier repr\'e9sentant une variable et 
+\f4\fs26 t
+\f1\fs32  le terme \'e0 associer \'e0 cette variable, il faut faire\
+\pard\pardeftab720\partightenfactor0
+
+\f4\fs26 \cf0 Env.add env id t\
+\pard\pardeftab720\partightenfactor0
+
+\f1\fs32 \cf0 Si on voit que l'unification n'est pas possible, on l\'e8ve l'exception\
+\pard\pardeftab720\partightenfactor0
+
+\f3\b\fs26 \cf4 exception
+\f4\b0 \cf0  Not_unifiable\
+\pard\pardeftab720\partightenfactor0
+
+\f1\fs32 \cf0 Vous disposez de la fonction 
+\f4\fs26 unify_lists env l1 l2
+\f1\fs32 , qui devrait vous \'eatre utile, et qui permet d'unifier les termes de 
+\f4\fs26 l1
+\f1\fs32  avec ceux de 
+\f4\fs26 l2
+\f1\fs32 . Par exemple, 
+\f4\fs26 unify_lists env [t1; t2] [t1'; t2']
+\f1\fs32  va ajouter dans 
+\f4\fs26 env
+\f1\fs32  les liaisons afin d'unifier 
+\f4\fs26 t1
+\f1\fs32  et 
+\f4\fs26 t1'
+\f1\fs32 , puis celles pour unifier 
+\f4\fs26 t2
+\f1\fs32  et 
+\f4\fs26 t2'
+\f1\fs32 .\
+\pard\pardeftab720\partightenfactor0
+
+\f0\b\fs37\fsmilli18720 \cf0 Example\
+\pard\pardeftab720\partightenfactor0
+
+\f1\b0\fs32 \cf0 Pour unifier\
+\pard\pardeftab720\partightenfactor0
+
+\f4\fs26 \cf0 unify_terms env (Functor(f1, l1)) (Functor(f2, l2))\
+\pard\pardeftab720\partightenfactor0
+
+\f1\fs32 \cf0 il faut v\'e9rifier que les noms sont les m\'eames et ensuite unifier les listes 
+\f4\fs26 l1
+\f1\fs32  et 
+\f4\fs26 l2
+\f1\fs32 .\
+\pard\pardeftab720\partightenfactor0
+
+\f0\b\fs37\fsmilli18720 \cf0 Tests\
+\pard\pardeftab720\partightenfactor0
+
+\f1\b0\fs32 \cf0 Vous pouvez tester de la m\'eame mani\'e8re que pr\'e9c\'e9demment.\
+\pard\pardeftab720\partightenfactor0
+
+\f0\b\fs48 \cf0 R\'e9solution\
+\pard\pardeftab720\partightenfactor0
+
+\fs37\fsmilli18720 \cf0 Travail demand\'e9\
+\pard\pardeftab720\partightenfactor0
+
+\f1\b0\fs32 \cf0 Le code \'e0 r\'e9cup\'e9rer pour cette partie se trouve {\field{\*\fldinst{HYPERLINK "http://moodle.insa-rennes.fr/mod/resource/view.php?id=18505"}}{\fldrslt \cf3 \ul \ulc3 ici}}.\
+Vous devez compl\'e9ter le fichier 
+\f2\i eval.ml
+\f1\i0 . La fonction 
+\f4\fs26 backchain
+\f1\fs32  est \'e0 compl\'e9ter :\
+
+\itap1\trowd \taflags0 \trgaph108\trleft-108 \trbrdrt\brdrnil \trbrdrl\brdrnil \trbrdrt\brdrnil \trbrdrr\brdrnil 
+\clvertalt\clvertalbase \clshdrawnil \clwWidth1960\clftsWidth3 \clmart10 \clmarl10 \clmarb10 \clmarr10 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrs\brdrw20\brdrcf8 \clpadl80 \clpadr80 \gaph\cellx4320
+\clvertalt\clvertalbase \clshdrawnil \clwWidth26119\clftsWidth3 \clmart10 \clmarl10 \clmarb10 \clmarr10 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadl100 \clpadr0 \gaph\cellx8640
+\pard\intbl\itap1\pardeftab720\qr\partightenfactor0
+
+\f4\fs26 \cf8 1\
+2\
+3\
+4\
+5\
+6\
+7\
+8\
+9\
+10\
+11\cell 
+\pard\intbl\itap1\pardeftab720\partightenfactor0
+
+\f3\b \cf4 let
+\f4\b0 \cf0  
+\f3\b \cf4 rec
+\f4\b0 \cf0  backchain k env goals =\
+  
+\f3\b \cf4 match
+\f4\b0 \cf0  goals 
+\f3\b \cf4 with
+\f4\b0 \cf0 \
+  | [] -> 
+\f5\i \cf9 (* TO DO *)
+\f4\i0 \cf0 \
+  | (BuiltinPredicate builtin) :: r ->\
+    
+\f3\b \cf4 begin
+\f4\b0 \cf0 \
+    
+\f5\i \cf9 (* TO DO *)
+\f4\i0 \cf0 \
+    
+\f3\b \cf4 end
+\f4\b0 \cf0 \
+  | g :: r ->\
+    
+\f3\b \cf4 begin
+\f4\b0 \cf0 \
+    
+\f5\i \cf9 (* TO DO *)
+\f4\i0 \cf0 \
+    
+\f3\b \cf4 end
+\f4\b0 \cf0 \cell \lastrow\row
+\pard\pardeftab720\partightenfactor0
+
+\f1\fs32 \cf0 Cette fonction renvoie un bool\'e9en indiquant si une solution a \'e9t\'e9 trouv\'e9e. Les param\'e8tres sont les suivants :\
+\pard\tx220\tx720\pardeftab720\li720\fi-720\partightenfactor0
+\ls2\ilvl0
+\f4\fs26 \cf0 \kerning1\expnd0\expndtw0 {\listtext	1	}\expnd0\expndtw0\kerning0
+k
+\f1\fs32  est un compteur qui sera utilis\'e9 lors de l'appel \'e0 la fonction 
+\f4\fs26 rename_rule
+\f1\fs32  qui vous est donn\'e9e. Cette fonction permet de renommer toutes les variables d'une clause et rend, en plus de la clause renomm\'e9e, le nouvel entier 
+\f4\fs26 k'
+\f1\fs32  qui servira pour le prochain renommage.\
+\ls2\ilvl0
+\f4\fs26 \kerning1\expnd0\expndtw0 {\listtext	2	}\expnd0\expndtw0\kerning0
+env
+\f1\fs32  est l'environnement repr\'e9sentant les diff\'e9rentes liaisons qui ont \'e9t\'e9 cr\'e9\'e9es lors des diff\'e9rentes unifications.\
+\ls2\ilvl0
+\f4\fs26 \kerning1\expnd0\expndtw0 {\listtext	3	}\expnd0\expndtw0\kerning0
+goals
+\f1\fs32  est la liste des pr\'e9dicats qu'il reste \'e0 rendre vrais.\
+\pard\pardeftab720\partightenfactor0
+\cf0 A la ligne 3, la liste des buts qu'il reste \'e0 r\'e9soudre est vide. On a donc trouv\'e9 une solution et il faut appeler la fonction 
+\f4\fs26 print_and_ask
+\f1\fs32  qui va afficher la solution et demander \'e0 l'utilisateur s'il veut une autre solution.\
+A la ligne 6, il faut \'e9valuer un pr\'e9dicat pr\'e9d\'e9fini. Vous disposez de la fonction 
+\f4\fs26 evaluate_builtin_predicate
+\f1\fs32  qui permet d'\'e9valuer un pr\'e9dicat pr\'e9d\'e9fini et de renvoyer un couple 
+\f2\i (bool\'e9en, environnement)
+\f1\i0 . Le 
+\f2\i bool\'e9en
+\f1\i0  indique si l'\'e9valuation du pr\'e9dicat a r\'e9ussi, et 
+\f2\i environnement
+\f1\i0  est le nouvel environnement.\
+A la ligne 10, il faut essayer d'unifier 
+\f4\fs26 g
+\f1\fs32  avec la t\'eate des clauses contenues dans la liste 
+\f4\fs26 rules
+\f1\fs32  (c'est un param\'e8tre de la fonction 
+\f4\fs26 eval
+\f1\fs32  qui repr\'e9sente le programme Prolog). Vous aurez besoin d'utilisez la fonction 
+\f4\fs26 \cf7 List\cf0 .exists
+\f1\fs32 , la fonction 
+\f4\fs26 rename_rule
+\f1\fs32  et la fonction 
+\f4\fs26 Unification.unify_predicates
+\f1\fs32 . Imaginons que la t\'eate de la clause soit 
+\f4\fs26 h
+\f1\fs32  et que la liste des pr\'e9dicats du corps de celle-ci soit 
+\f4\fs26 body
+\f1\fs32 , si 
+\f4\fs26 h
+\f1\fs32  s'unifie avec 
+\f4\fs26 g
+\f1\fs32 , il faut relancer 
+\f4\fs26 backchain
+\f1\fs32  avec comme liste de buts 
+\f4\fs26 body @ r
+\f1\fs32 .\
+\pard\pardeftab720\partightenfactor0
+
+\f0\b\fs37\fsmilli18720 \cf0 Tests\
+\pard\pardeftab720\partightenfactor0
+
+\f1\b0\fs32 \cf0 Vous pouvez tester de la m\'eame mani\'e8re que pr\'e9c\'e9demment.}

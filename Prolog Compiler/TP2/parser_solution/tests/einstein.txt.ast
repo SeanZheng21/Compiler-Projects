@@ -1,0 +1,116 @@
+persons(0, []).
+
+persons(N, [house(_Men, _Color, _Drink, _Smoke, _Animal) | T]) :-
+   =\=(N, 0),
+   is(N1, -(N, 1)),
+   persons(N1, T).
+
+person(1, [H | _], H).
+
+person(N, [_ | T], R) :-
+   =\=(N, 1),
+   is(N1, -(N, 1)),
+   person(N1, T, R).
+
+hint1([house(brit, red, _, _, _) | _]).
+
+hint1([_ | T]) :-
+   hint1(T).
+
+hint2([house(swede, _, _, _, dog) | _]).
+
+hint2([_ | T]) :-
+   hint2(T).
+
+hint3([house(dane, _, tea, _, _) | _]).
+
+hint3([_ | T]) :-
+   hint3(T).
+
+hint4([house(_, green, _, _, _), house(_, white, _, _, _) | _]).
+
+hint4([_ | T]) :-
+   hint4(T).
+
+hint5([house(_, green, coffee, _, _) | _]).
+
+hint5([_ | T]) :-
+   hint5(T).
+
+hint6([house(_, _, _, pallmall, bird) | _]).
+
+hint6([_ | T]) :-
+   hint6(T).
+
+hint7([house(_, yellow, _, dunhill, _) | _]).
+
+hint7([_ | T]) :-
+   hint7(T).
+
+hint8(Persons) :-
+   person(3, Persons, house(_, _, milk, _, _)).
+
+hint9(Persons) :-
+   person(1, Persons, house(norwegian, _, _, _, _)).
+
+hint10([house(_, _, _, blend, _), house(_, _, _, _, cat) | _]).
+
+hint10([house(_, _, _, _, cat), house(_, _, _, blend, _) | _]).
+
+hint10([_ | T]) :-
+   hint10(T).
+
+hint11([house(_, _, _, dunhill, _), house(_, _, _, _, horse) | _]).
+
+hint11([house(_, _, _, _, horse), house(_, _, _, dunhill, _) | _]).
+
+hint11([_ | T]) :-
+   hint11(T).
+
+hint12([house(_, _, beer, bluemaster, _) | _]).
+
+hint12([_ | T]) :-
+   hint12(T).
+
+hint13([house(german, _, _, prince, _) | _]).
+
+hint13([_ | T]) :-
+   hint13(T).
+
+hint14([house(norwegian, _, _, _, _), house(_, blue, _, _, _) | _]).
+
+hint14([house(_, blue, _, _, _), house(norwegian, _, _, _, _) | _]).
+
+hint14([_ | T]) :-
+   hint14(T).
+
+hint15([house(_, _, _, blend, _), house(_, _, water, _, _) | _]).
+
+hint15([house(_, _, water, _, _), house(_, _, _, blend, _) | _]).
+
+hint15([_ | T]) :-
+   hint15(T).
+
+question([house(_, _, _, _, fish) | _]).
+
+question([_ | T]) :-
+   question(T).
+
+solution(Persons) :-
+   persons(5, Persons),
+   hint1(Persons),
+   hint2(Persons),
+   hint3(Persons),
+   hint4(Persons),
+   hint5(Persons),
+   hint6(Persons),
+   hint7(Persons),
+   hint8(Persons),
+   hint9(Persons),
+   hint10(Persons),
+   hint11(Persons),
+   hint12(Persons),
+   hint13(Persons),
+   hint14(Persons),
+   hint15(Persons),
+   question(Persons).
